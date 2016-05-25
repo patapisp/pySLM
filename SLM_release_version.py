@@ -18,10 +18,10 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 matplotlib.use('TkAgg')
 
 
-class dummyClass:
-    def __init__(self):
-        print('Dummy class')
-        self.maps = {'zero': np.zeros((1024, 768))}
+# class dummyClass:
+#     def __init__(self):
+#         print('Dummy class')
+#         self.maps = {'zero': np.zeros((1024, 768))}
 
 
 def array2PIL(arr, size):
@@ -517,9 +517,14 @@ class SLMViewer:
         self.center1_lab_single = Entry(self.regular_option, textvariable=self.starc1)
         self.center1_lab_single.grid(column=3, row=1)
 
-        self.single_button = ttk.Button(self.regular_option, text='Create FQPM',
+        self.single_button = ttk.Button(self.regular_option, text='Make map',
                                         command=lambda: self.make_map('single'))
         self.single_button.grid(column=0, row=2)
+        map_types = ['FQPM', 'EOPM']
+        self.map_type_var = StringVar()
+        self.map_type_var.set('FQPM')
+        self.map_type_menu = OptionMenu(self.regular_option, self.map_type_var, *map_types)
+        self.map_type_menu.grid(row=2, column=1)
 
         ##########################################################################################
         # Pack star center vars together for easy access
@@ -994,7 +999,8 @@ class SLMViewer:
         except ValueError:
             print('ValueError')
             return
-        self.f = lambda x, y: self.SLM.pixel_value(x, y, c1, c2, I1, I2, val1, val2, F1, F2, l1, l2)
+        self.f = lambda x, y: self.SLM.pixel_value(x, y, c1, c2, I1, I2, val1, val2, F1, F2, l1, l2,
+                                                   type=self.map_type_var.get())
         p = np.zeros((1024, 768))
         print('Running binary weight-values calculation..')
         for (x, y), val in np.ndenumerate(p):
@@ -1135,8 +1141,15 @@ class SLMViewer:
             print('Error')
             return
         p = np.zeros((1024, 768), dtype=np.uint8)
-        for (x, y), v in np.ndenumerate(p):
-            p[x, y] = self.SLM.four_qs(x, y, (xc, yc), val1, val2)
+        if self.map_type_var.get() == 'FQPM':
+            for (x, y), v in np.ndenumerate(p):
+                p[x, y] = self.SLM.four_qs(x, y, (xc, yc), val1, val2)
+        elif self.map_type_var.get() == 'EOPM':
+            for (x, y), v in np.ndenumerate(p):
+                p[x, y] = self.SLM.eight_octants(x, y, (xc, yc), val1, val2)
+        else:
+            # would be nice to have some feedback in the GUI at some point
+            return
 
         phase_map = np.zeros((1024, 768, 3), dtype=np.uint8)
         phase_map[:, :, 0] = p

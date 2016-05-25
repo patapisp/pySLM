@@ -233,11 +233,47 @@ class SLM:
         else:  # pixel is in second or fourth quadrant
             return val1
 
-    def pixel_value(self, x, y, c1, c2, i1, i2, val1, val2, F1, F2, l1, l2):
+    def eight_octants(self, xp, yp, c, val1, val2):
+        """
+
+        :param xp:
+        :param yp:
+        :param c:
+        :param val1:
+        :param val2:
+        :return:
+        """
+        xs, ys = c
+        x = xp-xs
+        y = yp-ys
+
+        if (x == 0 and y >= 0): #or (y == 0 and x >= 0):
+            return val2
+        elif (x == 0 and y < 0): # or (y == 0 and x < 0):
+            return val1
+        #elif x == -1 and y == -2:
+          #  return val2
+        #elif x == +1 and y == 1 or x == +1 and y == 0:
+            #return val1
+        else:
+            pass
+
+        phi = np.arctan(y/x)
+        expr = lambda phi:((0 < phi < 0.25*np.pi) or (0.5*np.pi <= phi <= 0.75*np.pi)or (-1*np.pi <= phi < -0.75*np.pi)
+                           or (-0.5*np.pi <= phi <= -0.25*np.pi))
+        if expr(phi):  # pixel is in first or third quadrant
+            return val2
+        else:  # pixel is in second or fourth quadrant
+            return val1
+
+
+
+    def pixel_value(self, x, y, c1, c2, i1, i2, val1, val2, F1, F2, l1, l2, type='FQPM'):
         """
         Calculates value of pixel for 4 quadrants function
         :param x: coordinates of pixel
         :param y:
+        :param type: what type of map to apply
         :return:
         """
         x1, y1 = c1
@@ -251,8 +287,13 @@ class SLM:
         norm_airy = k1_airy + k2_airy
         k1_airy /= norm_airy
         k2_airy /= norm_airy
-        val_airy = k1_airy*self.four_qs(x, y, c1, val1, val2) + k2_airy*self.four_qs(x, y, c2, val1, val2)
-        return val_airy
+        if type == 'FQPM':
+            val_airy = k1_airy*self.four_qs(x, y, c1, val1, val2) + k2_airy*self.four_qs(x, y, c2, val1, val2)
+            return val_airy
+        elif type == 'EOPM':
+            val_airy = k1_airy*self.four_qs(x, y, c1, val1, val2) + k2_airy*self.four_qs(x, y, c2, val1, val2)
+            return val_airy
+
 
     def open_real_psf(self, psf_file):
         # choose image of real psf
