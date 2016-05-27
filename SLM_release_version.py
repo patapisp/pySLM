@@ -1000,7 +1000,7 @@ class SLMViewer:
             print('ValueError')
             return
         self.f = lambda x, y: self.SLM.pixel_value(x, y, c1, c2, I1, I2, val1, val2, F1, F2, l1, l2,
-                                                   type=self.map_type_var.get())
+                                                   mask=self.map_type_var.get())
         p = np.zeros((1024, 768))
         print('Running binary weight-values calculation..')
         for (x, y), val in np.ndenumerate(p):
