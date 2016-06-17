@@ -1,2 +1,2 @@
 # pySLM
-Python interface for the SLM LC-2012 tailored for use in adaptive coronagraphy
+Python interface for the SLM LC-2012 and newly integrated SLM Pluto tailored for use in adaptive coronagraphy
