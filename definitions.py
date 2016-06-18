@@ -19,7 +19,7 @@ matplotlib.use('TkAgg')
 class SLM:
     """
     A class that enables to write an image to the Holoeye SLM seen as a second screen
-    with dimensions 1024x768
+    with dimensions 1024x768 for SLM LC-2012 and 1920x1080 for SLM Pluto
     """
     def __init__(self):
         # get path that file is saved in
@@ -36,6 +36,10 @@ class SLM:
         self.bottom = self.dim[3]
         self.width = abs(self.right-self.left)
         self.height = abs(self.bottom-self.top)
+        if self.width == 1024:
+            self.SLM_type = "LC-2012"
+        else:
+            self.SLM_type = "Pluto"
         self.size = (self.width, self.height)
         self.dimensions = (self.width, self.height, 3)
         # set Windows ENVIRONMENTAL VARIABLE of SDL window position to the top-left corner
@@ -52,7 +56,10 @@ class SLM:
         self.active = False
 
         # SLM pixel size
-        self.pixelSize = 36
+        if self.SLM_type == "LC-2012":
+            self.pixelSize = 36
+        elif self.SLM_type == "Pluto":
+            self.pixelSize = 8
 
     def create_reference_array(self):
         """
@@ -148,11 +155,11 @@ class SLM:
         filename, extension = os.path.splitext(file)
         if extension == '.txt':
             p = np.loadtxt(file, dtype=int, delimiter=' ')
-            if np.shape(p) != (1024, 768):
+            if np.shape(p) != self.size:
                 return
-            if np.shape(p) == (768, 1024):
+            if np.shape(p) == (self.height, self.width):
                 p = p.T
-            m = np.zeros((1024, 768, 3), dtype=np.uint8)
+            m = np.zeros((self.width, self.height, 3), dtype=np.uint8)
             m[:, :, 0] = p
             m[:, :, 1] = p
             m[:, :, 2] = p
@@ -160,7 +167,7 @@ class SLM:
         elif extension == '.fits':
             hdu = fits.open(file)
             p = hdu[0].data
-            m = np.zeros((1024, 768, 3), dtype=np.uint8)
+            m = np.zeros((self.width, self.height, 3), dtype=np.uint8)
             m[:, :, 0] = p
             m[:, :, 1] = p
             m[:, :, 2] = p
@@ -283,56 +290,19 @@ class SLM:
                 else:  # pixel is in second or fourth quadrant
                     return val1
 
-    def eight_octants_old(self, xp, yp, c, val1, val2):
-        """
-
-        :param xp: pixel x coordinate
-        :param yp: pixel y coordinate
-        :param c: center coordinates in tuple (xc, yc)
-        :param val1: gray value 1
-        :param val2: gray value 2
-        :return:
-        """
-        xs, ys = c
-        x = xp-xs
-        y = yp-ys
-
-        expr2 = lambda phi:(0.25*np.pi < phi)
-        expr1 = lambda phi:(0.25*np.pi <= phi)
-        expr3 = lambda phi:(-0.5*np.pi < phi < -0.25*np.pi)
-        expr4 = lambda phi:(-0.75 > phi > -1*np.pi)
-        phi = 0
-        if (x == -1 and y == 0) or (x == 0 and y == -1):
-            return val1
-        elif (x == 0 and y == 0) or (x == -1 and y == -1):
-            return val2
-        if x == 0 and y < 0:
-            return val2
-        elif x == 0 and y >= 0:
-            return val1
-
-        else:
-            phi = np.arctan(y/x)
-            if y > 0 and x > 0:
-                if expr2(phi):  # pixel is in first or third quadrant
-                    return val1
-                else:  # pixel is in second or fourth quadrant
-                    return val2
-            elif y < 0 and x < 0:
-                if expr1(phi):  # pixel is in first or third quadrant
-                    return val1
-                else:  # pixel is in second or fourth quadrant
-                    return val2
-            elif y < 0 and x > 0:
-                if expr3(phi):  # pixel is in first or third quadrant
-                    return val2
-                else:  # pixel is in second or fourth quadrant
-                    return val1
-            else:
-                if expr4(phi):  # pixel is in first or third quadrant
-                    return val2
-                else:  # pixel is in second or fourth quadrant
-                    return val1
+    def Vortex_coronagraph(self, charge=2):
+        phase = np.empty(self.size)
+        n0w = self.width / 2
+        n0w = int(round(n0w))
+        n0h = self.height / 2
+        n0h = int(round(n0h))
+        for (x, y), v in np.ndenumerate(phase):
+            z = complex(x-n0w, y-n0h)
+            phi = np.angle(z)
+            phase[x, y] = phi/np.pi + 1.0
+        #retardance = phase * self.central_wavelength / self.wavelength
+        vortex_phasor = np.exp(1.j * charge * np.pi * phase)
+        return vortex_phasor
 
     def pixel_value(self, x, y, c1, c2, i1, i2, val1, val2, F1, F2, l1, l2, mask='FQPM'):
         """
