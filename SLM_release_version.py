@@ -257,7 +257,7 @@ class SLMViewer:
 
         # =====================================================================================
         # make canvas
-        self.off_image = np.zeros((1024, 768, 3))
+        self.off_image = np.zeros(self.SLM.dimensions)
         self.image = self.off_image
         self.fig, self.ax = plt.subplots()
         self.norm = Normalize(vmin=0, vmax=255)
@@ -268,6 +268,8 @@ class SLMViewer:
         # get image plot onto canvas and app
         self.data_plot = FigureCanvasTkAgg(self.fig, master=self.master)
         self.data_plot.get_tk_widget().configure(borderwidth=0)
+        self.fig.suptitle('SLM type : %s'%self.SLM.SLM_type, fontsize=12, fontweight='bold')
+
         self.data_plot.show()
         self.fig.canvas.mpl_connect('button_press_event', self.click_callback)
         # ====================================================================================
@@ -416,7 +418,7 @@ class SLMViewer:
         self.F1_entry = ttk.Entry(self.stars_frame, textvariable=self.F1_num, width=10)
         self.F1_entry.grid(column=4, row=1)
         self.starc1 = StringVar()
-        self.starc1.set('512,384')
+        self.starc1.set('%i,%i' % (int(self.SLM.width/2), int(self.SLM.height/2)))
         self.center1_lab = Entry(self.stars_frame, textvariable=self.starc1, width=10)
         self.center1_lab.grid(column=7, row=1)
         # star 2

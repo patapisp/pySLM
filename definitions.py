@@ -301,8 +301,8 @@ class SLM:
             phi = np.angle(z)
             phase[x, y] = phi/np.pi + 1.0
         #retardance = phase * self.central_wavelength / self.wavelength
-        vortex_phasor = np.exp(1.j * charge * np.pi * phase)
-        return vortex_phasor
+        #vortex_phasor = np.exp(1.j * charge * np.pi * phase)
+        return phase*255
 
     def pixel_value(self, x, y, c1, c2, i1, i2, val1, val2, F1, F2, l1, l2, mask='FQPM'):
         """
