@@ -38,6 +38,7 @@ class DropMenu:
     """
     def __init__(self, master, window):
         # Create dropdown menu
+        self.path = os.getcwd()
         self.window = window
         self.master = master
         self.menu = Menu(self.master)
@@ -198,9 +199,10 @@ class DropMenu:
         Save current open phase mask as a FITS file with the center information
         contained in the header
         """
-        file = filedialog.asksaveasfilename(master=self.master, title='Save as..')
+        file = filedialog.asksaveasfilename(master=self.master, title='Save as..', initialdir=self.path)
         if file is None:
             return
+        self.path = os.path.dirname(file)
         file += '.fits'
         # current = 0
         if name is None:

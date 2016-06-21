@@ -313,8 +313,13 @@ class SLM:
         :return:
         """
         x1, y1 = c1
+        x1 += 0.5
+        y1 += 0.5
+
         a1 = np.sqrt(x1**2+y1**2)
         x2, y2 = c2
+        x2 += 0.5
+        y2 += 0.5
         a2 = np.sqrt(x2**2+y2**2)
         r1 = np.sqrt((x1-x)**2 + (y1-y)**2)  # doesn't have to be an integer
         r2 = np.sqrt((x2-x)**2 + (y2-y)**2)
