@@ -1,5 +1,5 @@
 __author__ = 'Chronis'
-from definitions import SLM
+from pySLM.definitions import SLM
 import numpy as np
 from tkinter import _setit
 import PIL
@@ -18,10 +18,10 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 matplotlib.use('TkAgg')
 
 
-# class dummyClass:
-#     def __init__(self):
-#         print('Dummy class')
-#         self.maps = {'zero': np.zeros((1024, 768))}
+class dummyClass:
+    def __init__(self):
+        print('Dummy class')
+        self.maps = {'zero': np.zeros((1024, 768))}
 
 
 def array2PIL(arr, size):
@@ -38,6 +38,7 @@ class DropMenu:
     """
     def __init__(self, master, window):
         # Create dropdown menu
+        self.path = os.getcwd()
         self.window = window
         self.master = master
         self.menu = Menu(self.master)
@@ -198,9 +199,10 @@ class DropMenu:
         Save current open phase mask as a FITS file with the center information
         contained in the header
         """
-        file = filedialog.asksaveasfilename(master=self.master, title='Save as..')
+        file = filedialog.asksaveasfilename(master=self.master, title='Save as..', initialdir=self.path)
         if file is None:
             return
+        self.path = os.path.dirname(file)
         file += '.fits'
         # current = 0
         if name is None:
@@ -247,15 +249,17 @@ class SLMViewer:
         root.title('SLM Controller')
         try:
             self.SLM = SLM()
+            print("SLM type is %s"%self.SLM.SLM_type)
         except UserWarning:
-            self.SLM = dummyClass()
-            #raise UserWarning('No SLM connected.')
+            #self.SLM = dummyClass()
+            raise UserWarning('No SLM connected.')
 
         self.menu = DropMenu(root, self)  # add drop-down menu
         self.SLM.pixelSize = int(self.menu.slm_pxl.get())
+
         # =====================================================================================
         # make canvas
-        self.off_image = np.zeros((1024, 768, 3))
+        self.off_image = np.zeros(self.SLM.dimensions)
         self.image = self.off_image
         self.fig, self.ax = plt.subplots()
         self.norm = Normalize(vmin=0, vmax=255)
@@ -266,6 +270,8 @@ class SLMViewer:
         # get image plot onto canvas and app
         self.data_plot = FigureCanvasTkAgg(self.fig, master=self.master)
         self.data_plot.get_tk_widget().configure(borderwidth=0)
+        self.fig.suptitle('SLM type : %s'%self.SLM.SLM_type, fontsize=12, fontweight='bold')
+
         self.data_plot.show()
         self.fig.canvas.mpl_connect('button_press_event', self.click_callback)
         # ====================================================================================
@@ -288,8 +294,8 @@ class SLMViewer:
         self.clear_list_button.grid(column=1, row=1)
         # ======================================================================================
         # set up center(s) position
-        self.mouse_coordinates = (int(1024/2), int(768/2))  # default mouse position for center is center of SLM
-        self.center_position = [[int(1024/2), int(768/2)]]
+        self.mouse_coordinates = (int(self.SLM.width/2), int(self.SLM.height/2))  # default mouse position for center is center of SLM
+        self.center_position = [[int(self.SLM.width/2), int(self.SLM.height/2)]]
         self.plot_update()
         self.center_step = 1
 
@@ -414,7 +420,7 @@ class SLMViewer:
         self.F1_entry = ttk.Entry(self.stars_frame, textvariable=self.F1_num, width=10)
         self.F1_entry.grid(column=4, row=1)
         self.starc1 = StringVar()
-        self.starc1.set('512,384')
+        self.starc1.set('%i,%i' % (int(self.SLM.width/2), int(self.SLM.height/2)))
         self.center1_lab = Entry(self.stars_frame, textvariable=self.starc1, width=10)
         self.center1_lab.grid(column=7, row=1)
         # star 2
@@ -520,7 +526,7 @@ class SLMViewer:
         self.single_button = ttk.Button(self.regular_option, text='Make map',
                                         command=lambda: self.make_map('single'))
         self.single_button.grid(column=0, row=2)
-        map_types = ['FQPM', 'EOPM']
+        map_types = ['FQPM', 'EOPM', 'Vortex']
         self.map_type_var = StringVar()
         self.map_type_var.set('FQPM')
         self.map_type_menu = OptionMenu(self.regular_option, self.map_type_var, *map_types)
@@ -964,21 +970,6 @@ class SLMViewer:
             self.cstep_var.set(str(self.center_step))
         return
 
-    def dirty_quadrants(self, c1, c2):
-        """
-        Quick 4 quadrants for 2 stars at positions c1, c2
-        :param c1: position of star 1
-        :param c2: position of star 2
-        :return:
-        """
-        x1, y1 = c1
-        x2, y2 = c2
-        p = np.ones((1024, 768))*255
-        p.astype('uint8')
-        p[0:x1,y1:-1] = 106
-        p[x2:-1, 0:y2] = 106
-        p[x1:x2, y2:y1] = 106
-        return p
 
     def binary_mask(self):
         """
@@ -1001,7 +992,7 @@ class SLMViewer:
             return
         self.f = lambda x, y: self.SLM.pixel_value(x, y, c1, c2, I1, I2, val1, val2, F1, F2, l1, l2,
                                                    mask=self.map_type_var.get())
-        p = np.zeros((1024, 768))
+        p = np.zeros(np.SLM.size)
         print('Running binary weight-values calculation..')
         for (x, y), val in np.ndenumerate(p):
             p[x, y] = self.f(x, y)
@@ -1013,7 +1004,7 @@ class SLMViewer:
             print(e)
             return
 
-        phase_map = np.zeros((1024, 768, 3), dtype=np.uint8)
+        phase_map = np.zeros(self.SLM.dimensions, dtype=np.uint8)  # dimensions are (width,height, 3)
         phase_map[:, :, 0] = p
         phase_map[:, :, 1] = p
         phase_map[:, :, 2] = p
@@ -1051,7 +1042,7 @@ class SLMViewer:
             return
         self.SLM.open_real_psf(psf_file)
         self.f = lambda x, y: self.SLM.pixel_value_real_psf(x, y, c1, c2, val1, val2, I1, I2, psf_file)
-        p = np.zeros((1024, 768))
+        p = np.zeros(self.SLM.size)
         print('Running binary weight-values calculation..')
         for (x, y), val in np.ndenumerate(p):
             p[x, y] = self.f(x, y)
@@ -1063,7 +1054,7 @@ class SLMViewer:
             print(e)
             return
 
-        phase_map = np.zeros((1024, 768, 3), dtype=np.uint8)
+        phase_map = np.zeros(self.SLM.dimensions, dtype=np.uint8)
         phase_map[:, :, 0] = p
         phase_map[:, :, 1] = p
         phase_map[:, :, 2] = p
@@ -1103,11 +1094,11 @@ class SLMViewer:
             print('Error')
             return
         #self.f = lambda x, y: self.SLM.pixel_value_triple(x, y, c1, c2, I1, I2, val1, val2, F1, F2, l1, l2)
-        p = np.zeros((1024, 768), dtype=np.uint8)
+        p = np.zeros(self.SLM.size, dtype=np.uint8)
         for (x, y), val in np.ndenumerate(p):
             p[x, y] = self.f(x, y)
 
-        phase_map = np.zeros((1024,768,3), dtype=np.uint8)
+        phase_map = np.zeros(self.SLM.dimensions, dtype=np.uint8)
         phase_map[:, :, 0] = p
         phase_map[:, :, 1] = p
         phase_map[:, :, 2] = p
@@ -1140,18 +1131,20 @@ class SLMViewer:
         except ValueError:
             print('Error')
             return
-        p = np.zeros((1024, 768), dtype=np.uint8)
+        p = np.zeros(self.SLM.size, dtype=np.uint8)
         if self.map_type_var.get() == 'FQPM':
             for (x, y), v in np.ndenumerate(p):
                 p[x, y] = self.SLM.four_qs(x, y, (xc, yc), val1, val2)
         elif self.map_type_var.get() == 'EOPM':
             for (x, y), v in np.ndenumerate(p):
                 p[x, y] = self.SLM.eight_octants(x, y, (xc, yc), val1, val2)
+        elif self.map_type_var.get() == 'Vortex':
+            p = self.SLM.Vortex_coronagraph(0, 255)  # charge is 2
         else:
             # would be nice to have some feedback in the GUI at some point
             return
 
-        phase_map = np.zeros((1024, 768, 3), dtype=np.uint8)
+        phase_map = np.zeros(self.SLM.dimensions, dtype=np.uint8)
         phase_map[:, :, 0] = p
         phase_map[:, :, 1] = p
         phase_map[:, :, 2] = p
@@ -1188,44 +1181,44 @@ class SLMViewer:
         except ValueError:
             return
         # 0-pi FQ phase mask
-        p0 = np.zeros((1024, 768), dtype=np.uint8)
+        p0 = np.zeros(self.SLM.size, dtype=np.uint8)
         for (x, y), v in np.ndenumerate(p0):
             p0[x, y] = self.SLM.four_qs(x, y, (xc, yc), v_0, v_pi)
 
-        phase_map0 = np.zeros((1024, 768, 3), dtype=np.uint8)
+        phase_map0 = np.zeros(self.SLM.dimensions, dtype=np.uint8)
         phase_map0[:, :, 0] = p0
         phase_map0[:, :, 1] = p0
         phase_map0[:, :, 2] = p0
 
         self.rotateFQ_dict[self.rotatingFQ_list[0]] = phase_map0
         # pi/2 - 3pi/2 FQ phase mask
-        p1 = np.zeros((1024, 768), dtype=np.uint8)
+        p1 = np.zeros(self.SLM.size, dtype=np.uint8)
         for (x, y), v in np.ndenumerate(p1):
             p1[x, y] = self.SLM.four_qs(x, y, (xc, yc), v_pi2, v_3pi2)
 
-        phase_map1 = np.zeros((1024, 768, 3), dtype=np.uint8)
+        phase_map1 = np.zeros(self.SLM.dimensions, dtype=np.uint8)
         phase_map1[:, :, 0] = p1
         phase_map1[:, :, 1] = p1
         phase_map1[:, :, 2] = p1
 
         self.rotateFQ_dict[self.rotatingFQ_list[1]] = phase_map1
         # pi-0 FQ phase mask
-        p2 = np.zeros((1024, 768), dtype=np.uint8)
+        p2 = np.zeros(self.SLM.size, dtype=np.uint8)
         for (x, y), v in np.ndenumerate(p2):
             p2[x, y] = self.SLM.four_qs(x, y, (xc, yc), v_pi, v_0)
 
-        phase_map2 = np.zeros((1024, 768, 3), dtype=np.uint8)
+        phase_map2 = np.zeros(self.SLM.dimensions, dtype=np.uint8)
         phase_map2[:, :, 0] = p2
         phase_map2[:, :, 1] = p2
         phase_map2[:, :, 2] = p2
 
         self.rotateFQ_dict[self.rotatingFQ_list[2]] = phase_map2
         # 3pi/2 - pi/2 FQ phase mask
-        p3 = np.zeros((1024, 768), dtype=np.uint8)
+        p3 = np.zeros(self.SLM.size, dtype=np.uint8)
         for (x, y), v in np.ndenumerate(p3):
             p3[x, y] = self.SLM.four_qs(x, y, (xc, yc), v_3pi2, v_pi2)
 
-        phase_map3 = np.zeros((1024, 768, 3), dtype=np.uint8)
+        phase_map3 = np.zeros(self.SLM.dimensions, dtype=np.uint8)
         phase_map3[:, :, 0] = p3
         phase_map3[:, :, 1] = p3
         phase_map3[:, :, 2] = p3
