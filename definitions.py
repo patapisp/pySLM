@@ -290,19 +290,25 @@ class SLM:
                 else:  # pixel is in second or fourth quadrant
                     return val1
 
-    def Vortex_coronagraph(self, charge=2):
+    def Vortex_coronagraph(self, phi0, phi2pi, charge=2):
         phase = np.empty(self.size)
+        if charge % 2 != 0:
+            print("Odd charge -> change to closest even number")
+            charge += 1
         n0w = self.width / 2
         n0w = int(round(n0w))
         n0h = self.height / 2
         n0h = int(round(n0h))
         for (x, y), v in np.ndenumerate(phase):
-            z = complex(x-n0w, y-n0h)
+            z = complex(x-n0w-0.5, y-n0h-0.5)
+            z = z**charge
             phi = np.angle(z)
-            phase[x, y] = phi/np.pi + 1.0
-        #retardance = phase * self.central_wavelength / self.wavelength
-        #vortex_phasor = np.exp(1.j * charge * np.pi * phase)
-        return phase*255
+            phase[x, y] = phi + np.pi
+        phase = phase/(2*np.pi)
+        grey = phase*(phi2pi-phi0)
+        grey += phi0
+
+        return grey
 
     def pixel_value(self, x, y, c1, c2, i1, i2, val1, val2, F1, F2, l1, l2, mask='FQPM'):
         """

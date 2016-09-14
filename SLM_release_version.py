@@ -1139,7 +1139,7 @@ class SLMViewer:
             for (x, y), v in np.ndenumerate(p):
                 p[x, y] = self.SLM.eight_octants(x, y, (xc, yc), val1, val2)
         elif self.map_type_var.get() == 'Vortex':
-            p = self.SLM.Vortex_coronagraph()  # charge is 2
+            p = self.SLM.Vortex_coronagraph(0, 255)  # charge is 2
         else:
             # would be nice to have some feedback in the GUI at some point
             return
