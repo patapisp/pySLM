@@ -299,63 +299,9 @@ class SLMViewer:
         self.plot_update()
         self.center_step = 1
 
-        self.control_frame = ttk.LabelFrame(self.master, text='Center Controls')
-        self.cstep_var = StringVar()
-        self.cstep_var.set('1')
-        self.center_step_entry = Entry(self.control_frame, textvariable=self.cstep_var, justify='center')
-        self.center_step_entry.bind("<Return>", self.set_center_step)
-        self.center_control_up = ttk.Button(self.control_frame, text='^', command=lambda: self.center_move('up', 0))
-        self.center_control_down = ttk.Button(self.control_frame, text='v', command=lambda: self.center_move('down',0))
-        self.center_control_left = ttk.Button(self.control_frame, text='<', command=lambda: self.center_move('left',0))
-        self.center_control_right = ttk.Button(self.control_frame, text='>', command=lambda: self.center_move('right',0))
-        self.center_control_up.grid(column=1, row=0)
-        self.center_control_down.grid(column=1, row=2)
-        self.center_control_left.grid(column=0, row=1)
-        self.center_control_right.grid(column=2, row=1)
-        self.center_step_entry.grid(column=1, row=1)
-        self.center_num = ['1']
-        self.center_var = StringVar()
-        self.center_var.set('1')
-        add_center_button = ttk.Button(self.control_frame, text='Add', command=self.add_center)
-        add_center_button.grid(column=3, row=0)
-        self.centers_options = OptionMenu(self.control_frame, self.center_var, *self.center_num)
-        self.centers_options.grid(column=3, row=1)
-        # =============================================================================================
-        # Set gray values
-        self.val_1 = 0
-        self.val_2 = 1
-        self.grayval_frame = ttk.LabelFrame(self.master, text='Gray values')
 
-        self.gray_1_val = StringVar()
-        self.gray_1_val.set('0')
-        self.gray_1_entry = Entry(self.grayval_frame, textvariable=self.gray_1_val, justify='center')
-        self.gray_1_entry.bind("<Return>", self.arrow_return)
-        self.gray_1_entry.bind("<Up>", self.arrow_return)
-        self.gray_1_entry.bind("<Down>", self.arrow_return)
-        self.gray_1_entry.bind("<Left>", self.arrow_return)
-        self.gray_1_entry.bind("<Right>", self.arrow_return)
-        self.gray_2_val = StringVar()
-        self.gray_2_val.set('0')
-        self.gray_2_entry = Entry(self.grayval_frame, textvariable=self.gray_2_val, justify='center')
-        self.gray_2_entry.bind("<Return>", self.arrow_return)
-        self.gray_2_entry.bind("<Up>", self.arrow_return)
-        self.gray_2_entry.bind("<Down>", self.arrow_return)
-        self.gray_2_entry.bind("<Left>", self.arrow_return)
-        self.gray_2_entry.bind("<Right>", self.arrow_return)
-        self.gray_1_lab = ttk.Label(self.grayval_frame, text='Gray-value 1')
-        self.gray_2_lab = ttk.Label(self.grayval_frame, text='Gray-value 2')
-        self.phase_1_val = StringVar()
-        self.phase_1_val.set('Phase: %.3f rad'%self.menu.phase_curve[int(self.gray_1_val.get())])
-        self.phase_2_val = StringVar()
-        self.phase_2_val.set('Phase: %.3f rad'%self.menu.phase_curve[int(self.gray_2_val.get())])
-        self.phase_1_lab = ttk.Label(self.grayval_frame, textvariable=self.phase_1_val)
-        self.phase_2_lab = ttk.Label(self.grayval_frame, textvariable=self.phase_2_val)
-        self.gray_1_lab.grid(column=0, row=0)
-        self.gray_2_lab.grid(column=0, row=1)
-        self.gray_1_entry.grid(column=1, row=0)
-        self.gray_2_entry.grid(column=1, row=1)
-        self.phase_1_lab.grid(column=2, row=0)
-        self.phase_2_lab.grid(column=2, row=1)
+        # =============================================================================================
+
         # =============================================================================================
         # activate phase map
         self.active_frame = LabelFrame(self.master, text='Activate')
@@ -369,12 +315,12 @@ class SLMViewer:
         # ==========================================================================================
         # OPTIONS FRAME
         self.notebook = ttk.Notebook(self.master)
-        self.regular_option = Frame(self.notebook)
-        self.rotate_frame = Frame(self.notebook)
+        self.fqpm_frame = Frame(self.notebook)
+        self.vortex_frame = Frame(self.notebook)
         self.multiple_frame = Frame(self.notebook)
-        self.notebook.add(self.regular_option, text='Regular')
-        self.notebook.add(self.multiple_frame, text='Multiple')
-        self.notebook.add(self.rotate_frame, text='Phase shift')
+        self.notebook.add(self.fqpm_frame, text='FQPM')
+        self.notebook.add(self.vortex_frame, text='Vortex')
+        self.notebook.add(self.multiple_frame, text='Mutliple')
         self.notebook.grid()
         # ===========================================================================================
         # star infos
@@ -502,36 +448,81 @@ class SLMViewer:
         self.center3_lab.grid(column=7, row=3)
         self.center3_lab.bind("<Return>", self.l_over_D_callback)
         ####################################################################################
-        I_lab_single = ttk.Label(self.regular_option, text='Intensity')
-        l_lab_single = ttk.Label(self.regular_option, text='Wavelength(nm)')
-        F_lab_single = ttk.Label(self.regular_option, text='F #')
-        C_lab_single = ttk.Label(self.regular_option, text='Center(x,y)')
-        I_lab_single.grid(column=0, row=0)
-        l_lab_single.grid(column=1, row=0)
-        F_lab_single.grid(column=2, row=0)
-        C_lab_single.grid(column=3, row=0)
-        # 1st star on regular frame
-        self.I1_entry_single = ttk.Entry(self.regular_option, textvariable=self.I1_num)
-        self.I1_entry_single.grid(column=0, row=1)
 
-        self.l1_entry_single = ttk.Entry(self.regular_option, textvariable=self.l1_num)
-        self.l1_entry_single.grid(column=1, row=1)
 
-        self.F1_entry_single = ttk.Entry(self.regular_option, textvariable=self.F1_num)
-        self.F1_entry_single.grid(column=2, row=1)
+        #self.center1_lab_fqpm = Entry(self.fqpm_frame, textvariable=self.starc1)
+        #self.center1_lab_fqpm.grid(column=3, row=1)
 
-        self.center1_lab_single = Entry(self.regular_option, textvariable=self.starc1)
-        self.center1_lab_single.grid(column=3, row=1)
-
-        self.single_button = ttk.Button(self.regular_option, text='Make map',
+        self.single_button = ttk.Button(self.fqpm_frame, text='Make map',
                                         command=lambda: self.make_map('single'))
-        self.single_button.grid(column=0, row=2)
-        map_types = ['FQPM', 'EOPM', 'Vortex']
+        self.single_button.grid(column=0, row=0)
+        map_types = ['FQPM', 'EOPM']
         self.map_type_var = StringVar()
         self.map_type_var.set('FQPM')
-        self.map_type_menu = OptionMenu(self.regular_option, self.map_type_var, *map_types)
-        self.map_type_menu.grid(row=2, column=1)
+        self.map_type_menu = OptionMenu(self.fqpm_frame, self.map_type_var, *map_types)
+        self.map_type_menu.grid(row=0, column=2)
 
+        self.control_frame = ttk.LabelFrame(self.fqpm_frame, text='Center Controls')
+        self.cstep_var = StringVar()
+        self.cstep_var.set('1')
+        self.center_step_entry = Entry(self.control_frame, textvariable=self.cstep_var, justify='center')
+        self.center_step_entry.bind("<Return>", self.set_center_step)
+        self.center_control_up = ttk.Button(self.control_frame, text='^', command=lambda: self.center_move('up', 0))
+        self.center_control_down = ttk.Button(self.control_frame, text='v', command=lambda: self.center_move('down',0))
+        self.center_control_left = ttk.Button(self.control_frame, text='<', command=lambda: self.center_move('left',0))
+        self.center_control_right = ttk.Button(self.control_frame, text='>', command=lambda: self.center_move('right',0))
+        self.center_control_up.grid(column=1, row=0)
+        self.center_control_down.grid(column=1, row=2)
+        self.center_control_left.grid(column=0, row=1)
+        self.center_control_right.grid(column=2, row=1)
+        self.center_step_entry.grid(column=1, row=1)
+        self.center_num = ['1']
+        self.center_var = StringVar()
+        self.center_var.set('1')
+        add_center_button = ttk.Button(self.control_frame, text='Add', command=self.add_center)
+        add_center_button.grid(column=3, row=0)
+        self.centers_options = OptionMenu(self.control_frame, self.center_var, *self.center_num)
+        self.centers_options.grid(column=3, row=1)
+
+
+        # Set gray values
+        self.val_1 = 0
+        self.val_2 = 1
+        self.grayval_frame = ttk.LabelFrame(self.fqpm_frame, text='Gray values')
+
+        self.gray_1_val = StringVar()
+        self.gray_1_val.set('0')
+        self.gray_1_entry = Entry(self.grayval_frame, textvariable=self.gray_1_val, justify='center')
+        self.gray_1_entry.bind("<Return>", self.arrow_return)
+        self.gray_1_entry.bind("<Up>", self.arrow_return)
+        self.gray_1_entry.bind("<Down>", self.arrow_return)
+        self.gray_1_entry.bind("<Left>", self.arrow_return)
+        self.gray_1_entry.bind("<Right>", self.arrow_return)
+        self.gray_2_val = StringVar()
+        self.gray_2_val.set('0')
+        self.gray_2_entry = Entry(self.grayval_frame, textvariable=self.gray_2_val, justify='center')
+        self.gray_2_entry.bind("<Return>", self.arrow_return)
+        self.gray_2_entry.bind("<Up>", self.arrow_return)
+        self.gray_2_entry.bind("<Down>", self.arrow_return)
+        self.gray_2_entry.bind("<Left>", self.arrow_return)
+        self.gray_2_entry.bind("<Right>", self.arrow_return)
+        self.gray_1_lab = ttk.Label(self.grayval_frame, text='Gray-value 1')
+        self.gray_2_lab = ttk.Label(self.grayval_frame, text='Gray-value 2')
+        self.phase_1_val = StringVar()
+        self.phase_1_val.set('Phase: %.3f rad'%self.menu.phase_curve[int(self.gray_1_val.get())])
+        self.phase_2_val = StringVar()
+        self.phase_2_val.set('Phase: %.3f rad'%self.menu.phase_curve[int(self.gray_2_val.get())])
+        self.phase_1_lab = ttk.Label(self.grayval_frame, textvariable=self.phase_1_val)
+        self.phase_2_lab = ttk.Label(self.grayval_frame, textvariable=self.phase_2_val)
+        self.gray_1_lab.grid(column=0, row=0)
+        self.gray_2_lab.grid(column=0, row=1)
+        self.gray_1_entry.grid(column=1, row=0)
+        self.gray_2_entry.grid(column=1, row=1)
+        self.phase_1_lab.grid(column=2, row=0)
+        self.phase_2_lab.grid(column=2, row=1)
+
+        self.grayval_frame.grid(column=0, row=1, columnspan=5)
+        self.control_frame.grid(column=0, row=2, columnspan=5)
         ##########################################################################################
         # Pack star center vars together for easy access
         self.center_labels = [self.starc1, self.starc2, self.starc3]
@@ -552,42 +543,116 @@ class SLMViewer:
         self.new_map_name = StringVar()
         self.new_map_name.set('Map name')
         self.new_map_name_entry = Entry(self.binary_frame, textvariable=self.new_map_name)
-        self.new_map_name_entry_single = Entry(self.regular_option, textvariable=self.new_map_name)
-        self.new_map_name_entry_single.grid(column=2, row=2)
+        self.new_map_name_entry_single = Entry(self.fqpm_frame, textvariable=self.new_map_name)
+        self.new_map_name_entry_single.grid(column=3, row=0)
         self.new_map_name_entry.grid(column=0, row=1)
         self.save_filetypes = [('Windows Bitmap', '*.bmp'), ('Text File', '*.txt'), ('Fits File', '*.fits')]
 
         self.stars_frame.grid(column=0, row=0)
         self.binary_frame.grid(column=0, row=1)
         # =====================================================================================================
-        # Make rotating FQ phase mask. The values will change btw 0-pi, pi/2-3pi/2, pi-0, 3pi/2_pi/2
-        #self.rotate_frame = ttk.LabelFrame(self.master, text='Rotate FQ')
-        create_rotating_FQ_button = ttk.Button(self.rotate_frame, text='Create',
-                                               command=lambda: self.make_map('rotate'))
-        self.import_rotating_maps = ttk.Button(self.rotate_frame, text='Import 4 maps', command=self.import_rotating_maps_callback)
-        self.rotate_button = ttk.Button(self.rotate_frame, text='Rotate', command=self.rotate_callback, state=DISABLED)
-        self.rotating_var = StringVar()
-        self.rotating_var.set('0-pi')
-        self.rotating_label = ttk.Label(self.rotate_frame, textvariable=self.rotating_var, state=DISABLED)
-        self.rotatingFQ_list = ['0-pi', 'pi/2-3pi/2', 'pi-0', '3pi/2-pi/2']
-        self.whichFQ = 0
-        self.rotateFQ_dict = {}
-        """
-        rotating_values_label = ttk.Label(self.rotate_frame, text='0,pi/2,pi,3pi/2:')
-        self.rotating_values_var = StringVar()
-        self.rotating_values_var.set('0,95,200,255')
-        self.rotating_values_entry = Entry(self.rotate_frame, textvariable=self.rotating_values_var)
-        """
-        create_rotating_FQ_button.grid(column=0, row=0)
-        self.rotate_button.grid(column=1, row=0)
-        self.rotating_label.grid(column=2, row=0)
-        #rotating_values_label.grid(column=0, row=1)
-        #self.rotating_values_entry.grid(column=1, row=1)
-        self.import_rotating_maps.grid(column=2, row=1)
+        # Vortex tab
+        # =====================================================================================================
+        self.make_vortex = ttk.Button(self.vortex_frame, text='Make vortex',
+                                      command=lambda: self.make_map('vortex'))
+        self.make_vortex.grid(column=0, row=0)
+        # charge of the vortex
+        charge_lab = ttk.Label(self.vortex_frame, text='charge')
+        charge_lab.grid(column=1, row=0)
+        self.charge = IntVar()
+        self.charge.set(2)
+        self.charge_entry = Entry(self.vortex_frame, textvariable=self.charge)
+        self.charge_entry.grid(column=2, row=0)
+        # coordinates entry
+        coordinates_lab = ttk.Label(self.vortex_frame, text='Coordinates')
+        coordinates_lab.grid(column=0, row=1)
 
+        self.vortex_coordinates = StringVar()
+        self.vortex_coordinates.set('%i, %i' % (int(self.SLM.width/2), int(self.SLM.height/2)))
+        self.vortex_coordinates_entry = Entry(self.vortex_frame, textvariable=self.vortex_coordinates)
+        self.vortex_coordinates_entry.grid(column=1, row=1)
+        # gray value for the 0 pi phase
+        gray0_lab = ttk.Label(self.vortex_frame, text='0:')
+        gray0_lab.grid(column=0, row=2)
+        self.gray0 = IntVar()
+        self.gray0.set(0)
+        self.gray0_old = 0
+        self.gray0_entry = Entry(self.vortex_frame, textvariable=self.gray0)
+        self.gray0_entry.grid(column=1, row=2)
+        # gray value for 2pi phase
+        gray2pi_lab = ttk.Label(self.vortex_frame, text='2pi:')
+        gray2pi_lab.grid(column=2, row=2)
+        self.gray2pi = IntVar()
+        self.gray2pi.set(0)
+        self.gray2pi_old = 0
+        self.gray2pi_entry = Entry(self.vortex_frame, textvariable=self.gray2pi)
+        self.gray2pi_entry.grid(column=3, row=2)
+        # button to change gray values of vortex on the fly
+        self.gray_vortex_button = ttk.Button(self.vortex_frame, text='Change', command=self.vortex_change_grayvalues)
+        self.gray_vortex_button.grid(column=2, row=3)
         # ======================================================================================================
         self.multiple_star_position = []
         # =============================================================================================================
+
+    def make_vortex_callback(self):
+        """
+        Create single star mask at center denoted by star center
+        :return:
+        """
+        try:
+            c = self.vortex_coordinates.get().split(sep=',')
+            xc = int(c[0])
+            yc = int(c[1])
+            val0 = self.gray0.get()
+            val2pi = self.gray2pi.get()
+        except ValueError:
+            print('Error')
+            return
+        p = self.SLM.Vortex_coronagraph(val0, val2pi, charge=self.charge.get())
+        self.gray0_old = val0
+        self.gray2pi_old = val2pi
+        phase_map = np.zeros(self.SLM.dimensions, dtype=np.uint8)
+        phase_map[:, :, 0] = p
+        phase_map[:, :, 1] = p
+        phase_map[:, :, 2] = p
+        name = "Vortex_coord:%i,%i_charge:%i" % (xc, yc, self.charge.get())
+        self.SLM.maps[name] = {'data': phase_map}
+        self.SLM.maps[name]['center'] = [[xc, yc]]
+        self.SLM.maps[name]['type'] = 'vortex'
+        self.maps.append(name)
+        self.refresh_optionmenu(self.maps_options, self.maps_var, self.maps)
+        self.image = phase_map
+        self.plot_update()
+        # save map to bitmap if option is checked
+        if self.checkbox_val.get():
+            filename = filedialog.asksaveasfilename(parent=self.master, filetypes=self.save_filetypes,
+                                                    title='Save map as..')
+            filename += '.bmp'
+            surf = pygame.surfarray.make_surface(phase_map)
+            pygame.image.save(surf, filename)
+        return
+
+    def vortex_change_grayvalues(self):
+        """
+        Changes the values of the vortex by scaling them with new_range/old_range
+        :return:
+        """
+        if not(0 <= self.gray0.get() <= 255 and 0 <= self.gray2pi.get() <= 255):
+            print('invalid values')
+            return
+        if not(self.SLM.maps[self.maps_var.get()]['type'] == 'vortex'):
+            return
+        scale = abs(self.gray2pi.get() - self.gray0.get())/abs(self.gray2pi_old - self.gray0_old)
+        self.gray2pi_old = self.gray2pi.get()
+        self.gray0_old = self.gray0.get()
+        self.image = self.image*scale
+        if self.active:
+            self.SLM.draw(self.image)
+        self.plot_update()
+        return
+
+
+
 
     def l_over_D_callback(self, event):
         """
@@ -641,58 +706,7 @@ class SLMViewer:
             pass
 
         return
-
-
-
-    def import_rotating_maps_callback(self):
-        """
-        Import 4 maps in a row that will be the 4 phase shifts
-        """
-        self.open_phase_shift_map('0-pi')
-        self.open_phase_shift_map('pi/2-3pi/2')
-        self.open_phase_shift_map('pi-0')
-        self.open_phase_shift_map('3pi/2-pi/2')
-        self.rotate_button.config(state=NORMAL)
-        self.rotating_label.config(state=NORMAL)
-        return       
         
-
-    def open_phase_shift_map(self,which):
-        mfile = filedialog.askopenfilename(title=which)
-        name, extension = os.path.splitext(mfile)
-        if extension == '.fits':
-            hdu = fits.open(mfile)
-            p = hdu[0].data
-            phase_map = np.zeros((1024,768,3), dtype=np.uint8)
-            phase_map[:, :, 0] = p
-            phase_map[:, :, 1] = p
-            phase_map[:, :, 2] = p
-            self.rotateFQ_dict[which] = phase_map
-        elif extension == '.bmp':
-            p = pygame.image.load(mfile)
-            p = pygame.surfarray.array3d(p)
-            self.rotateFQ_dict[which] = p
-    
-    def rotate_callback(self):
-        """
-        Rotate through masks in rotateFQ_dict which will result in rotating FQ mask with
-        different pi values
-        :return:
-        """
-        # make activate button green to indicate that mask is alive
-        self.active = True
-        self.activation_button.config(bg='PaleGreen2')
-        self.active_var.set('ON')
-        # get mask and apply it
-        which = self.rotatingFQ_list[self.whichFQ]
-        m = self.rotateFQ_dict[which]
-        self.image = m
-        self.SLM.draw(m)
-        self.plot_update()
-        self.rotating_var.set(which)
-        # go to next mask in line
-        self.whichFQ = (self.whichFQ + 1) % 4
-
 
     def clear_maps(self):
         """
@@ -718,8 +732,8 @@ class SLMViewer:
         elif which == 'triple':
             self.map_thread = threading.Thread(target=self.triple_mask, daemon=True)
             self.map_thread.start()
-        elif which == 'rotate':
-            self.map_thread = threading.Thread(target=self.rotating_mask, daemon=True)
+        elif which == 'vortex':
+            self.map_thread = threading.Thread(target=self.make_vortex_callback, daemon=True)
             self.map_thread.start()
         else:
             pass
@@ -1021,55 +1035,7 @@ class SLMViewer:
             self.menu.save_fits(name=name)
         return
 
-    def binary_mask_psf(self):
-        """
-        Create binary mask
-        :return:
-        """
-        psf_file = filedialog.askopenfilename()
-        c1 = self.starc1.get().split(sep=',')
-        c1 = (int(c1[0]), int(c1[1]))
-        c2 = self.starc2.get().split(sep=',')
-        c2 = (int(c2[0]), int(c2[1]))
-        try:
-            I1, l1, F1 = float(self.I1_num.get()), float(self.l1_num.get()), float(self.F1_num.get())
-            I2, l2, F2 = float(self.I2_num.get()), float(self.l2_num.get()), float(self.F2_num.get())
-            val1 = self.menu.phase_curve[int(self.gray_1_val.get())]
-            val2 = self.menu.phase_curve[int(self.gray_2_val.get())]
-            print('Binary map with values :%f, %f'%(val1, val2))
-        except ValueError:
-            print('ValueError')
-            return
-        self.SLM.open_real_psf(psf_file)
-        self.f = lambda x, y: self.SLM.pixel_value_real_psf(x, y, c1, c2, val1, val2, I1, I2, psf_file)
-        p = np.zeros(self.SLM.size)
-        print('Running binary weight-values calculation..')
-        for (x, y), val in np.ndenumerate(p):
-            p[x, y] = self.f(x, y)
 
-        try:
-            print("Running rad to gray conversion..")
-            p = self.rad_to_gray(p)  # convert rad values to the corresponding gray values
-        except Exception as e:
-            print(e)
-            return
-
-        phase_map = np.zeros(self.SLM.dimensions, dtype=np.uint8)
-        phase_map[:, :, 0] = p
-        phase_map[:, :, 1] = p
-        phase_map[:, :, 2] = p
-        name = self.new_map_name.get()
-        self.SLM.maps[name] = {'data': phase_map}
-        self.SLM.maps[name]['center'] = [[c1[0], c1[1]], [c2[0], c2[1]]]
-        self.SLM.maps[name]['star info'] = [[I1, l1, F1], [I2, l2, F2]]
-        self.maps.append(name)
-        self.refresh_optionmenu(self.maps_options, self.maps_var, self.maps)
-        self.image = phase_map
-        self.plot_update()
-        # save map to bitmap if option is checked
-        if self.checkbox_val.get():
-            self.menu.save_fits(name=name)
-        return
 
     def triple_mask(self):
         """
@@ -1138,8 +1104,6 @@ class SLMViewer:
         elif self.map_type_var.get() == 'EOPM':
             for (x, y), v in np.ndenumerate(p):
                 p[x, y] = self.SLM.eight_octants(x, y, (xc, yc), val1, val2)
-        elif self.map_type_var.get() == 'Vortex':
-            p = self.SLM.Vortex_coronagraph(0, 255)  # charge is 2
         else:
             # would be nice to have some feedback in the GUI at some point
             return
@@ -1165,68 +1129,7 @@ class SLMViewer:
             pygame.image.save(surf, filename)
         return
 
-    def rotating_mask(self):
-        """
-        Make 4 FQ for active center and values given in rotating_values_var
-        :return:
-        """
-        try:
-            which = int(self.center_var.get())-1
-            v_0, v_pi2, v_pi = int(self.menu.v0.get()), int(self.menu.vpi2.get()), int(self.menu.vpi.get())
-            v_3pi2 = int(self.menu.v3pi2.get())
 
-            c = self.center_labels[which].get().split(sep=',')
-            xc = int(c[0])
-            yc = int(c[1])
-        except ValueError:
-            return
-        # 0-pi FQ phase mask
-        p0 = np.zeros(self.SLM.size, dtype=np.uint8)
-        for (x, y), v in np.ndenumerate(p0):
-            p0[x, y] = self.SLM.four_qs(x, y, (xc, yc), v_0, v_pi)
-
-        phase_map0 = np.zeros(self.SLM.dimensions, dtype=np.uint8)
-        phase_map0[:, :, 0] = p0
-        phase_map0[:, :, 1] = p0
-        phase_map0[:, :, 2] = p0
-
-        self.rotateFQ_dict[self.rotatingFQ_list[0]] = phase_map0
-        # pi/2 - 3pi/2 FQ phase mask
-        p1 = np.zeros(self.SLM.size, dtype=np.uint8)
-        for (x, y), v in np.ndenumerate(p1):
-            p1[x, y] = self.SLM.four_qs(x, y, (xc, yc), v_pi2, v_3pi2)
-
-        phase_map1 = np.zeros(self.SLM.dimensions, dtype=np.uint8)
-        phase_map1[:, :, 0] = p1
-        phase_map1[:, :, 1] = p1
-        phase_map1[:, :, 2] = p1
-
-        self.rotateFQ_dict[self.rotatingFQ_list[1]] = phase_map1
-        # pi-0 FQ phase mask
-        p2 = np.zeros(self.SLM.size, dtype=np.uint8)
-        for (x, y), v in np.ndenumerate(p2):
-            p2[x, y] = self.SLM.four_qs(x, y, (xc, yc), v_pi, v_0)
-
-        phase_map2 = np.zeros(self.SLM.dimensions, dtype=np.uint8)
-        phase_map2[:, :, 0] = p2
-        phase_map2[:, :, 1] = p2
-        phase_map2[:, :, 2] = p2
-
-        self.rotateFQ_dict[self.rotatingFQ_list[2]] = phase_map2
-        # 3pi/2 - pi/2 FQ phase mask
-        p3 = np.zeros(self.SLM.size, dtype=np.uint8)
-        for (x, y), v in np.ndenumerate(p3):
-            p3[x, y] = self.SLM.four_qs(x, y, (xc, yc), v_3pi2, v_pi2)
-
-        phase_map3 = np.zeros(self.SLM.dimensions, dtype=np.uint8)
-        phase_map3[:, :, 0] = p3
-        phase_map3[:, :, 1] = p3
-        phase_map3[:, :, 2] = p3
-
-        self.rotateFQ_dict[self.rotatingFQ_list[3]] = phase_map3
-        self.rotate_button.config(state=NORMAL)
-        self.rotating_label.config(state=NORMAL)
-        return
 
     def rad_to_gray(self, p):
         """
@@ -1251,12 +1154,12 @@ if __name__ == '__main__':
     window = SLMViewer(root)
     window.data_plot.get_tk_widget().grid(column=0, row=0, columnspan=4, rowspan=5)
     window.import_maps_frame.grid(column=4, row=5)
-    window.control_frame.grid(column=4, row=1)
-    window.grayval_frame.grid(column=4, row=2)
+    #window.control_frame.grid(column=4, row=1)
+    #window.grayval_frame.grid(column=4, row=2)
     window.active_frame.grid(column=4, row=0)
     #window.stars_frame.grid(column=4, row=3)
     #window.binary_frame.grid(column=4, row=4)
     #window.rotate_frame.grid(column=0, row=5)
-    window.notebook.grid(column=4, row=3)
+    window.notebook.grid(column=4, row=1)
     root.protocol("WM_DELETE_WINDOW", lambda: on_closing(root))  # make sure window close properly
     root.mainloop()
