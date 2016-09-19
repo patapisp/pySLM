@@ -182,7 +182,7 @@ class SLM:
         # if np.shape(self.maps[filename]) != (1024, 768, 3):
         #    raise UserWarning('Wrong dimensions for SLM of size %i x %i (x %i)' % (self.width, self.height, 3))
 
-        self.save_maps()
+        # self.save_maps()
         return filename
 
     def airy(self, r, F, l, I0):
@@ -290,7 +290,7 @@ class SLM:
                 else:  # pixel is in second or fourth quadrant
                     return val1
 
-    def Vortex_coronagraph(self, phi0, phi2pi, charge=2):
+    def Vortex_coronagraph(self, charge=2):
         phase = np.empty(self.size)
         if charge % 2 != 0:
             print("Odd charge -> change to closest even number")
@@ -305,10 +305,9 @@ class SLM:
             phi = np.angle(z)
             phase[x, y] = phi + np.pi
         phase = phase/(2*np.pi)
-        grey = phase*(phi2pi-phi0)
-        grey += phi0
 
-        return grey
+
+        return phase
 
     def pixel_value(self, x, y, c1, c2, i1, i2, val1, val2, F1, F2, l1, l2, mask='FQPM'):
         """
