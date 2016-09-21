@@ -488,7 +488,10 @@ class SLMViewer:
         self.map_type_menu = OptionMenu(self.fqpm_frame, self.map_type_var, *map_types)
         self.map_type_menu.grid(row=0, column=2)
 
-        self.control_frame = ttk.LabelFrame(self.fqpm_frame, text='Center Controls')
+        # =========================================================================================================
+        # CONTROL FRAME
+        # =========================================================================================================
+        self.control_frame = ttk.LabelFrame(self.master, text='Center Controls')
         self.cstep_var = StringVar()
         self.cstep_var.set('1')
         self.center_step_entry = Entry(self.control_frame, textvariable=self.cstep_var, justify='center')
@@ -591,6 +594,7 @@ class SLMViewer:
         self.charge = IntVar()
         self.charge.set(2)
         self.charge_entry = Entry(self.vortex_frame, textvariable=self.charge, width=10)
+        self.charge_entry.bind("<Return>", self.charge_callback)
         self.charge_entry.grid(column=3, row=1)
         # coordinates entry
         coordinates_lab = ttk.Label(self.vortex_frame, text='Coordinates')
@@ -633,7 +637,37 @@ class SLMViewer:
         self.text.grid(column=0, row=0, columnspan=4)
         sys.stdout = StdoutRedirector(self.text)  # assign stdout to custom class
 
+    def calculate_charge_gray(self, p):
+        if not(0 <= self.gray0.get() <= 255 and 0 <= self.gray2pi.get() <= 255):
+            print('invalid values')
+            return
+        if self.charge.get() % 2 != 0:
+            print("Odd charge -> change to closest even number")
+            self.charge.set(self.charge.get() + 1)
+        #if 'vortex' not in self.SLM.maps.keys():
+        #    return
+        z = p**self.charge.get()
+        z = (np.angle(z) + np.pi)/(2*np.pi)
+        z = z*abs(self.gray2pi.get() - self.gray0.get()) + self.gray0.get()
+        phase_map = np.zeros(self.SLM.dimensions, dtype=np.uint8)
+        phase_map[:, :, 0] = z
+        phase_map[:, :, 1] = z
+        phase_map[:, :, 2] = z
+        return phase_map
 
+    def charge_callback(self, event):
+        """
+        Callback when charge of vortex phase mask is changed
+        :return:
+        """
+        p = self.SLM.maps[self.maps_var.get()]['map']
+        phase_map = self.calculate_charge_gray(p)
+        self.image = phase_map
+        print('Changed charge to %i' % self.charge.get())
+        if self.active:
+            self.SLM.draw(self.image)
+        self.plot_update()
+        return
 
     def make_vortex_callback(self):
         """
@@ -644,21 +678,16 @@ class SLMViewer:
             c = self.vortex_coordinates.get().split(sep=',')
             xc = int(c[0])
             yc = int(c[1])
-            val0 = self.gray0.get()
-            val2pi = self.gray2pi.get()
         except ValueError:
-            print('Error')
+            print('Error with coordinates')
             return
         print('Calculating vortex with charge %i, gray %i-%i, coord %i,%i' %
               (self.charge.get(), self.gray0.get(), self.gray2pi.get(), xc, yc))
 
-        p = self.SLM.Vortex_coronagraph(charge=self.charge.get())
+        p = self.SLM.Vortex_coronagraph(xc, yc)
+        phase_map = self.calculate_charge_gray(p)
 
-        phase_map = np.zeros(self.SLM.dimensions, dtype=np.uint8)
-        phase_map[:, :, 0] = p*(val2pi-val0)+val0
-        phase_map[:, :, 1] = p*(val2pi-val0)+val0
-        phase_map[:, :, 2] = p*(val2pi-val0)+val0
-        name = "Vortex_coord:%i,%i_charge:%i" % (xc, yc, self.charge.get())
+        name = "Vortex_coord:%i,%i" % (xc, yc)
         print('Finished, map-name %s' % name)
         self.SLM.maps[name] = {'data': phase_map}
         self.SLM.maps[name]['map'] = p
@@ -679,19 +708,12 @@ class SLMViewer:
 
     def vortex_change_grayvalues(self):
         """
-        Changes the values of the vortex by scaling them with new_range/old_range
+        Changes the values of the vortex by scaling them with new_range
         :return:
         """
-        if not(0 <= self.gray0.get() <= 255 and 0 <= self.gray2pi.get() <= 255):
-            print('invalid values')
-            return
-        if not(self.SLM.maps[self.maps_var.get()]['type'] == 'vortex'):
-            return
-        p = self.SLM.maps[self.maps_var.get()]['map']*abs(self.gray2pi.get() - self.gray0.get()) + self.gray0.get()
-        phase_map = np.zeros(self.SLM.dimensions, dtype=np.uint8)
-        phase_map[:, :, 0] = p
-        phase_map[:, :, 1] = p
-        phase_map[:, :, 2] = p
+
+        p = self.SLM.maps[self.maps_var.get()]['map']
+        phase_map = self.calculate_charge_gray(p)
         self.image = phase_map
         print('Changed gray value range to %i-%i' % (self.gray0.get(), self.gray2pi.get()))
         if self.active:
@@ -1201,8 +1223,8 @@ if __name__ == '__main__':
     window = SLMViewer(root)
     window.data_plot.get_tk_widget().grid(column=0, row=0, columnspan=4, rowspan=5)
     window.import_maps_frame.grid(column=4, row=5)
-    window.text_frame.grid(column=4, row=2)
-    #window.control_frame.grid(column=4, row=1)
+    window.text_frame.grid(column=4, row=3)
+    window.control_frame.grid(column=4, row=2)
     #window.grayval_frame.grid(column=4, row=2)
     window.active_frame.grid(column=4, row=0)
     #window.stars_frame.grid(column=4, row=3)
