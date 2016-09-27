@@ -545,6 +545,13 @@ class SLMViewer:
         self.phase_1_lab.grid(column=2, row=0)
         self.phase_2_lab.grid(column=2, row=1)
 
+        # phase shift gradient per pixel
+        shift_per_pixel_lab = ttk.Label(self.fqpm_frame, text='Shift per px (horizontally)')
+        shift_per_pixel_lab.grid(column=0, row=3)
+        self.shift_per_pixel = DoubleVar()
+        self.shift_per_pixel.set(0.0)
+        shift_per_pixel_entry = Entry(self.fqpm_frame, textvariable=self.shift_per_pixel)
+        shift_per_pixel_entry.grid(column=1, row=3)
         self.grayval_frame.grid(column=0, row=1, columnspan=5)
         self.control_frame.grid(column=0, row=2, columnspan=5)
 
@@ -1168,8 +1175,16 @@ class SLMViewer:
         print('Calculating %s with gray values %i, %i at coord %i,%i' %
               (self.map_type_var.get(), val1, val2, xc, yc))
         if self.map_type_var.get() == 'FQPM':
-            for (x, y), v in np.ndenumerate(p):
-                p[x, y] = self.SLM.four_qs(x, y, (xc, yc), val1, val2)
+            # for (x, y), v in np.ndenumerate(p):
+            #     p[x, y] = self.SLM.four_qs(x, y, (xc, yc), val1, val2)
+            p[xc:, yc:] = 1
+            p[:xc, :yc] = 1
+            p[:xc, yc:] = 0
+            p[xc:, :yc] = 0
+            print(self.SLM.height, self.SLM.width)
+            xx, yy = np.meshgrid(np.arange(0, self.SLM.width), np.arange(0, self.SLM.height))
+            p = (np.angle(np.exp(1j*p*np.pi + 1j*yy.T*self.shift_per_pixel.get()/np.pi))+ np.pi)/(2*np.pi)
+            p = p*abs(val1 - val2) + val1
         elif self.map_type_var.get() == 'EOPM':
             for (x, y), v in np.ndenumerate(p):
                 p[x, y] = self.SLM.eight_octants(x, y, (xc, yc), val1, val2)
