@@ -18,6 +18,15 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 matplotlib.use('TkAgg')
 
 
+def cart2pol(x,y):
+    """
+    Takes cartesian (2D) coordinates and transforms them into polar.
+    """
+    rho = np.sqrt(x**2 + y**2)
+    phi = np.arctan2(y, x)
+    return (rho, phi)
+
+
 class dummyClass:
     def __init__(self):
         print('Dummy class')
@@ -339,9 +348,11 @@ class SLMViewer:
         self.fqpm_frame = Frame(self.notebook)
         self.vortex_frame = Frame(self.notebook)
         self.multiple_frame = Frame(self.notebook)
+        self.zernike_frame = Frame(self.notebook)
         self.notebook.add(self.fqpm_frame, text='FQ/EO')
         self.notebook.add(self.vortex_frame, text='Vortex')
         self.notebook.add(self.multiple_frame, text='Mutliple')
+        self.notebook.add(self.zernike_frame)
         self.notebook.grid()
 
         # ===========================================================================================
@@ -482,7 +493,7 @@ class SLMViewer:
         self.single_button = ttk.Button(self.fqpm_frame, text='Make map',
                                         command=lambda: self.make_map('single'))
         self.single_button.grid(column=0, row=0)
-        map_types = ['FQPM', 'EOPM']
+        map_types = ['FQPM', 'EOPM', 'FLAT']
         self.map_type_var = StringVar()
         self.map_type_var.set('FQPM')
         self.map_type_menu = OptionMenu(self.fqpm_frame, self.map_type_var, *map_types)
@@ -545,13 +556,45 @@ class SLMViewer:
         self.phase_1_lab.grid(column=2, row=0)
         self.phase_2_lab.grid(column=2, row=1)
 
-        # phase shift gradient per pixel
-        shift_per_pixel_lab = ttk.Label(self.fqpm_frame, text='Shift per px (horizontally)')
-        shift_per_pixel_lab.grid(column=0, row=3)
-        self.shift_per_pixel = DoubleVar()
-        self.shift_per_pixel.set(0.0)
-        shift_per_pixel_entry = Entry(self.fqpm_frame, textvariable=self.shift_per_pixel)
-        shift_per_pixel_entry.grid(column=1, row=3)
+        # ============================================================================================
+        # ZERNIKE TAB
+        # ============================================================================================
+        # shift_per_pixel_lab = ttk.Label(self.fqpm_frame, text='Shift per px (horizontally)')
+        # shift_per_pixel_lab.grid(column=0, row=3)
+        # self.shift_per_pixel = DoubleVar()
+        # self.shift_per_pixel.set(0.0)
+        # shift_per_pixel_entry = Entry(self.fqpm_frame, textvariable=self.shift_per_pixel)
+        # shift_per_pixel_entry.grid(column=1, row=3)
+
+        defocus_coeff_lab = ttk.Label(self.zernike_frame, text='Defocus coeff:')
+        defocus_coeff_lab.grid(column=0, row=0)
+        self.defocus_coeff = DoubleVar()
+        self.defocus_coeff.set(0)
+        defocus_coeff_entry = Entry(self.zernike_frame, textvariable=self.defocus_coeff)
+        defocus_coeff_entry.grid(column=1, row=0)
+
+        astigm_coeff_lab = ttk.Label(self.zernike_frame, text='Astigmatism coeff:')
+        astigm_coeff_lab.grid(column=2, row=0)
+        self.astigm_coeff = DoubleVar()
+        self.astigm_coeff.set(0)
+        astigm_coeff_entry = Entry(self.zernike_frame, textvariable=self.astigm_coeff)
+        astigm_coeff_entry.grid(column=3, row=0)
+
+        zernike_range_lab = Label(self.zernike_frame, text='Phase shift of zernike')
+        zernike_range_lab.grid(column=0, row=1, columnspan=2)
+        self.zernike_min = DoubleVar()
+        self.zernike_min.set(0)
+        zernike_min_entry = Entry(self.zernike_frame, textvariable=self.zernike_min)
+        zernike_min_entry.grid(column=2, row=1)
+        self.zernike_max = DoubleVar()
+        self.zernike_max.set(1)
+        zernike_max_entry = Entry(self.zernike_frame, textvariable=self.zernike_max)
+        zernike_max_entry.grid(column=3, row=1)
+
+        self.Defocus = lambda r: np.sqrt(3)*(2*r**2-1)
+        self.Astigm = lambda r, theta:np.sqrt(6)*r**2*np.sin(2*theta)
+
+        # ======================================================================================
         self.grayval_frame.grid(column=0, row=1, columnspan=5)
         self.control_frame.grid(column=0, row=2, columnspan=5)
 
@@ -1177,13 +1220,18 @@ class SLMViewer:
         if self.map_type_var.get() == 'FQPM':
             # for (x, y), v in np.ndenumerate(p):
             #     p[x, y] = self.SLM.four_qs(x, y, (xc, yc), val1, val2)
-            p[xc:, yc:] = 1
-            p[:xc, :yc] = 1
+            p[xc:, yc:] = 0.5
+            p[:xc, :yc] = 0.5
             p[:xc, yc:] = 0
             p[xc:, :yc] = 0
-            print(self.SLM.height, self.SLM.width)
-            xx, yy = np.meshgrid(np.arange(0, self.SLM.width), np.arange(0, self.SLM.height))
-            p = (np.angle(np.exp(1j*p*np.pi + 1j*yy.T*self.shift_per_pixel.get()/np.pi))+ np.pi)/(2*np.pi)
+            xx, yy = np.meshgrid(np.arange(-self.SLM.width/2, self.SLM.width/2),
+                                 np.arange(-self.SLM.height/2, self.SLM.height/2))
+            R, Theta = cart2pol(xx,yy)
+            zernike = self.defocus_coeff.get()*self.Defocus(R) + self.astigm_coeff.get()*self.Astigm(R, Theta)
+            zernike += np.min(zernike)
+            zernike /= np.max(zernike)
+            p = (np.angle(np.exp(1j*p*2*np.pi + 1j*yy.T*self.shift_per_pixel.get()/np.pi +
+                                 1j*zernike.T*2*np.pi))+ np.pi)/(2*np.pi)
             p = p*abs(val1 - val2) + val1
         elif self.map_type_var.get() == 'EOPM':
             for (x, y), v in np.ndenumerate(p):
