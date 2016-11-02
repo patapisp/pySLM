@@ -352,7 +352,7 @@ class SLMViewer:
         self.notebook.add(self.fqpm_frame, text='FQ/EO')
         self.notebook.add(self.vortex_frame, text='Vortex')
         self.notebook.add(self.multiple_frame, text='Mutliple')
-        self.notebook.add(self.zernike_frame)
+        self.notebook.add(self.zernike_frame, text='Zernike')
         self.notebook.grid()
 
         # ===========================================================================================
@@ -591,9 +591,15 @@ class SLMViewer:
         zernike_max_entry = Entry(self.zernike_frame, textvariable=self.zernike_max)
         zernike_max_entry.grid(column=3, row=1)
 
-        self.Defocus = lambda r: np.sqrt(3)*(2*r**2-1)
+        apply_zernike = ttk.Button(self.zernike_frame, text='Apply', command=self.apply_zernike)
+        apply_zernike.grid(column=0, row=2)
+        self.Defocus = lambda r: np.sqrt(3)*(2*r**2)
         self.Astigm = lambda r, theta:np.sqrt(6)*r**2*np.sin(2*theta)
 
+        xx, yy = np.meshgrid(np.arange(-self.SLM.width/2, self.SLM.width/2),
+                             np.arange(-self.SLM.height/2, self.SLM.height/2))
+
+        self.R, self.Theta = cart2pol(xx, yy)
         # ======================================================================================
         self.grayval_frame.grid(column=0, row=1, columnspan=5)
         self.control_frame.grid(column=0, row=2, columnspan=5)
@@ -1214,40 +1220,37 @@ class SLMViewer:
         except ValueError:
             print('Error')
             return
-        p = np.zeros(self.SLM.size, dtype=np.uint8)
+        p = np.zeros(self.SLM.size)
+        p_raw = np.zeros(self.SLM.size)
         print('Calculating %s with gray values %i, %i at coord %i,%i' %
               (self.map_type_var.get(), val1, val2, xc, yc))
         if self.map_type_var.get() == 'FQPM':
-            # for (x, y), v in np.ndenumerate(p):
-            #     p[x, y] = self.SLM.four_qs(x, y, (xc, yc), val1, val2)
-            p[xc:, yc:] = 0.5
-            p[:xc, :yc] = 0.5
-            p[:xc, yc:] = 0
-            p[xc:, :yc] = 0
-            xx, yy = np.meshgrid(np.arange(-self.SLM.width/2, self.SLM.width/2),
-                                 np.arange(-self.SLM.height/2, self.SLM.height/2))
-            R, Theta = cart2pol(xx,yy)
-            zernike = self.defocus_coeff.get()*self.Defocus(R) + self.astigm_coeff.get()*self.Astigm(R, Theta)
-            zernike += np.min(zernike)
-            zernike /= np.max(zernike)
-            p = (np.angle(np.exp(1j*p*2*np.pi + 1j*yy.T*self.shift_per_pixel.get()/np.pi +
-                                 1j*zernike.T*2*np.pi))+ np.pi)/(2*np.pi)
-            p = p*abs(val1 - val2) + val1
+            p[xc:, yc:] = val2
+            p[:xc, :yc] = val2
+            p[:xc, yc:] = val1
+            p[xc:, :yc] = val1
+            p_raw[xc:, yc:] = float(val2/255)*2*np.pi
+            p_raw[:xc, :yc] = float(val2/255)*2*np.pi
+            p_raw[:xc, yc:] = float(val1/255)*2*np.pi
+            p_raw[xc:, :yc] = float(val1/255)*2*np.pi
+        elif self.map_type_var.get() == 'FLAT':
+            pass
         elif self.map_type_var.get() == 'EOPM':
             for (x, y), v in np.ndenumerate(p):
                 p[x, y] = self.SLM.eight_octants(x, y, (xc, yc), val1, val2)
+                p_raw = p
         else:
             # would be nice to have some feedback in the GUI at some point
             return
-
         phase_map = np.zeros(self.SLM.dimensions, dtype=np.uint8)
         phase_map[:, :, 0] = p
         phase_map[:, :, 1] = p
         phase_map[:, :, 2] = p
         name = self.new_map_name.get()
-        self.SLM.maps[name]= {'data': phase_map}
+        self.SLM.maps[name] = {'data': phase_map}
         self.SLM.maps[name]['center'] = [[xc, yc]]
         self.SLM.maps[name]['star info'] = [I1, l1, F1]
+        self.SLM.maps[name]['map'] = p_raw
         self.maps.append(name)
         self.refresh_optionmenu(self.maps_options, self.maps_var, self.maps)
         print('Finished, mask-name: %s' % name)
@@ -1261,6 +1264,37 @@ class SLMViewer:
             surf = pygame.surfarray.make_surface(phase_map)
             pygame.image.save(surf, filename)
             print('File saved')
+        return
+
+    def zernike_send(self):
+        """
+        Changes the values of the vortex by scaling them with new_range
+        :return:
+        """
+
+        p = self.SLM.maps[self.maps_var.get()]['data']
+
+        self.image = p
+        if self.active:
+            self.SLM.draw(self.image)
+        self.plot_update()
+        return
+
+    def apply_zernike(self):
+        zernike = self.defocus_coeff.get()*self.Defocus(self.R/1080) + \
+                  self.astigm_coeff.get()*self.Astigm(self.R/1080, self.Theta)
+        magnitude = (self.zernike_max.get()-self.zernike_min.get())
+        p = self.SLM.maps[self.maps_var.get()]['map']
+        p = np.exp(1j*p)
+        calib = np.angle(np.exp(1j*zernike.T*magnitude))
+        m = (np.angle(p/np.exp(1j*calib)) + np.pi)/(2*np.pi)
+        m *= 255
+        phase_map = np.zeros(self.SLM.dimensions, dtype=np.uint8)
+        phase_map[:, :, 0] = m
+        phase_map[:, :, 1] = m
+        phase_map[:, :, 2] = m
+        self.SLM.maps[self.maps_var.get()]['data'] = phase_map
+        self.zernike_send()
         return
 
     def rad_to_gray(self, p):
