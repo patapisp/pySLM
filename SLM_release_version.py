@@ -594,7 +594,7 @@ class SLMViewer:
         apply_zernike = ttk.Button(self.zernike_frame, text='Apply', command=self.apply_zernike)
         apply_zernike.grid(column=0, row=2)
         self.Defocus = lambda r: np.sqrt(3)*(2*r**2)
-        self.Astigm = lambda r, theta:np.sqrt(6)*r**2*np.sin(2*theta)
+        self.Astigm = lambda r, theta: np.sqrt(6)*(r**2)*np.sin(2*theta)
 
         xx, yy = np.meshgrid(np.arange(-self.SLM.width/2, self.SLM.width/2),
                              np.arange(-self.SLM.height/2, self.SLM.height/2))
@@ -1285,9 +1285,9 @@ class SLMViewer:
                   self.astigm_coeff.get()*self.Astigm(self.R/1080, self.Theta)
         magnitude = (self.zernike_max.get()-self.zernike_min.get())
         p = self.SLM.maps[self.maps_var.get()]['map']
-        p = np.exp(1j*p)
+        p = np.angle(np.exp(1j*p))
         calib = np.angle(np.exp(1j*zernike.T*magnitude))
-        m = (np.angle(p/np.exp(1j*calib)) + np.pi)/(2*np.pi)
+        m = (np.angle(np.exp(1j*p)/np.exp(1j*calib)) + np.pi)/(2*np.pi)
         m *= 255
         phase_map = np.zeros(self.SLM.dimensions, dtype=np.uint8)
         phase_map[:, :, 0] = m
