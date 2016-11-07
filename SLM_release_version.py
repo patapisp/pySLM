@@ -1229,10 +1229,10 @@ class SLMViewer:
             p[:xc, :yc] = val2
             p[:xc, yc:] = val1
             p[xc:, :yc] = val1
-            p_raw[xc:, yc:] = float(val2/255)*2*np.pi
-            p_raw[:xc, :yc] = float(val2/255)*2*np.pi
-            p_raw[:xc, yc:] = float(val1/255)*2*np.pi
-            p_raw[xc:, :yc] = float(val1/255)*2*np.pi
+            # p_raw[xc:, yc:] = float(val2/255)*2*np.pi
+            # p_raw[:xc, :yc] = float(val2/255)*2*np.pi
+            # p_raw[:xc, yc:] = float(val1/255)*2*np.pi
+            # p_raw[xc:, :yc] = float(val1/255)*2*np.pi
         elif self.map_type_var.get() == 'FLAT':
             pass
         elif self.map_type_var.get() == 'EOPM':
@@ -1250,7 +1250,7 @@ class SLMViewer:
         self.SLM.maps[name] = {'data': phase_map}
         self.SLM.maps[name]['center'] = [[xc, yc]]
         self.SLM.maps[name]['star info'] = [I1, l1, F1]
-        self.SLM.maps[name]['map'] = p_raw
+        self.SLM.maps[name]['map'] = p
         self.maps.append(name)
         self.refresh_optionmenu(self.maps_options, self.maps_var, self.maps)
         print('Finished, mask-name: %s' % name)
@@ -1285,10 +1285,11 @@ class SLMViewer:
                   self.astigm_coeff.get()*self.Astigm(self.R/1080, self.Theta)
         magnitude = (self.zernike_max.get()-self.zernike_min.get())
         p = self.SLM.maps[self.maps_var.get()]['map']
-        p = np.angle(np.exp(1j*p))
+        #p = np.angle(np.exp(1j*p)) +np.pi
         calib = np.angle(np.exp(1j*zernike.T*magnitude))
-        m = (np.angle(np.exp(1j*p)/np.exp(1j*calib)) + np.pi)/(2*np.pi)
-        m *= 255
+        calib = calib*127/np.pi
+        #m = (np.angle(np.exp(1j*p)/np.exp(1j*calib)) + np.pi)/(2*np.pi)
+        m = np.array(p - calib, dtype=np.uint8)
         phase_map = np.zeros(self.SLM.dimensions, dtype=np.uint8)
         phase_map[:, :, 0] = m
         phase_map[:, :, 1] = m
