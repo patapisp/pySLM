@@ -600,6 +600,24 @@ class SLMViewer:
                              np.arange(-self.SLM.height/2, self.SLM.height/2))
 
         self.R, self.Theta = cart2pol(xx, yy)
+
+
+        zernike_gray1_lab = Label(self.zernike_frame, text='Gray1')
+        zernike_gray1_lab.grid(column=0, row=3)
+        self.zernike_gray1 = IntVar()
+        self.zernike_gray1.set(85)
+        zernike_gray1_entry = Entry(self.zernike_frame, textvariable=self.zernike_gray1)
+        zernike_gray1_entry.grid(column=1, row=3)
+
+        zernike_gray2_lab = Label(self.zernike_frame, text='Gray2')
+        zernike_gray2_lab.grid(column=0, row=4)
+        self.zernike_gray2 = IntVar()
+        self.zernike_gray2.set(255)
+        zernike_gray2_entry = Entry(self.zernike_frame, textvariable=self.zernike_gray2)
+        zernike_gray2_entry.grid(column=1, row=4)
+
+        self.zernike_gray1_old = 85
+        self.zernike_gray2_old = 255
         # ======================================================================================
         self.grayval_frame.grid(column=0, row=1, columnspan=5)
         self.control_frame.grid(column=0, row=2, columnspan=5)
@@ -1224,6 +1242,10 @@ class SLMViewer:
         p_raw = np.zeros(self.SLM.size)
         print('Calculating %s with gray values %i, %i at coord %i,%i' %
               (self.map_type_var.get(), val1, val2, xc, yc))
+        self.zernike_gray1_old = val1
+        self.zernike_gray2_old = val2
+        self.zernike_gray1.set(val1)
+        self.zernike_gray2.set(val2)
         if self.map_type_var.get() == 'FQPM':
             p[xc:, yc:] = val2
             p[:xc, :yc] = val2
@@ -1285,6 +1307,15 @@ class SLMViewer:
                   self.astigm_coeff.get()*self.Astigm(self.R/1080, self.Theta)
         magnitude = (self.zernike_max.get()-self.zernike_min.get())
         p = self.SLM.maps[self.maps_var.get()]['map']
+
+        val1 = self.zernike_gray1.get()
+        val2 = self.zernike_gray2.get()
+
+        if (val1 != self.zernike_gray1_old) or (val2 != self.zernike_gray2_old):
+            p[p==self.zernike_gray1_old] = val1
+            p[p==self.zernike_gray2_old] = val2
+            self.zernike_gray1_old = val1
+            self.zernike_gray2_old = val2
         #p = np.angle(np.exp(1j*p)) +np.pi
         calib = np.angle(np.exp(1j*zernike.T*magnitude))
         calib = calib*127/np.pi
@@ -1294,6 +1325,7 @@ class SLMViewer:
         phase_map[:, :, 0] = m
         phase_map[:, :, 1] = m
         phase_map[:, :, 2] = m
+        self.SLM.maps[self.maps_var.get()]['map'] = p
         self.SLM.maps[self.maps_var.get()]['data'] = phase_map
         self.zernike_send()
         return
