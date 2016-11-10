@@ -580,6 +580,13 @@ class SLMViewer:
         astigm_coeff_entry = Entry(self.zernike_frame, textvariable=self.astigm_coeff)
         astigm_coeff_entry.grid(column=3, row=0)
 
+        secastigm_coeff_lab = ttk.Label(self.zernike_frame, text='Sec. Astigmatism coeff:')
+        secastigm_coeff_lab.grid(column=4, row=0)
+        self.secastigm_coeff = DoubleVar()
+        self.secastigm_coeff.set(0)
+        secastigm_coeff_entry = Entry(self.zernike_frame, textvariable=self.secastigm_coeff)
+        secastigm_coeff_entry.grid(column=5, row=0)
+
         zernike_range_lab = Label(self.zernike_frame, text='Phase shift of zernike')
         zernike_range_lab.grid(column=0, row=1, columnspan=2)
         self.zernike_min = DoubleVar()
@@ -595,6 +602,7 @@ class SLMViewer:
         apply_zernike.grid(column=0, row=2)
         self.Defocus = lambda r: np.sqrt(3)*(2*r**2)
         self.Astigm = lambda r, theta: np.sqrt(6)*(r**2)*np.sin(2*theta)
+        self.SecAstigm = lambda r, theta: np.sqrt(10)*(4*r**4-3*r**3)*np.sin(2*theta)
 
         xx, yy = np.meshgrid(np.arange(-self.SLM.width/2, self.SLM.width/2),
                              np.arange(-self.SLM.height/2, self.SLM.height/2))
@@ -1304,7 +1312,8 @@ class SLMViewer:
 
     def apply_zernike(self):
         zernike = self.defocus_coeff.get()*self.Defocus(self.R/1080) + \
-                  self.astigm_coeff.get()*self.Astigm(self.R/1080, self.Theta)
+                  self.astigm_coeff.get()*self.Astigm(self.R/1080, self.Theta) + \
+                  self.secastigm_coeff.get()*self.SecAstigm(self.R/1080, self.Theta)
         magnitude = (self.zernike_max.get()-self.zernike_min.get())
         p = self.SLM.maps[self.maps_var.get()]['map']
 
