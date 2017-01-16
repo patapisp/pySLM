@@ -9,13 +9,14 @@ from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog
 import matplotlib
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import threading
 import matplotlib.image as mplimg
 from matplotlib.colors import Normalize
 from matplotlib import cm
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-matplotlib.use('TkAgg')
+
 
 
 def cart2pol(x,y):
@@ -117,6 +118,7 @@ class DropMenu:
         self.vpi.set('200')
         self.v3pi2.set('255')
         self.slm_pxl = StringVar()
+
         self.slm_pxl.set('36')
         self.intensity = StringVar()
         self.wavelength = StringVar()
@@ -351,7 +353,7 @@ class SLMViewer:
         self.zernike_frame = Frame(self.notebook)
         self.notebook.add(self.fqpm_frame, text='FQ/EO')
         self.notebook.add(self.vortex_frame, text='Vortex')
-        self.notebook.add(self.multiple_frame, text='Mutliple')
+        self.notebook.add(self.multiple_frame, text='Multiple')
         self.notebook.add(self.zernike_frame, text='Zernike')
         self.notebook.grid()
 
@@ -728,14 +730,30 @@ class SLMViewer:
             self.charge.set(self.charge.get() + 1)
         #if 'vortex' not in self.SLM.maps.keys():
         #    return
+
         z = p**self.charge.get()
-        z = (np.angle(z) + np.pi)/(2*np.pi)
-        z = z*abs(self.gray2pi.get() - self.gray0.get()) + self.gray0.get()
+        z = (np.angle(z) + np.pi)/(np.pi)
+        z = self.map_to_interval(z)
+        self.gray0.set(str(np.min(z)))
+        self.gray2pi.set(str(np.max(z)))
+        #z = z*abs(self.gray2pi.get() - self.gray0.get()) + self.gray0.get()
         phase_map = np.zeros(self.SLM.dimensions, dtype=np.uint8)
         phase_map[:, :, 0] = z
         phase_map[:, :, 1] = z
         phase_map[:, :, 2] = z
         return phase_map
+
+    def map_to_interval(self, p):
+        """
+        Takes vortex with values 0-2.0 and maps them to an interval in radians
+        determined by the higher value of gray2pi"""
+        val2pi = self.gray_to_rad(self.gray2pi.get())
+        val0 = val2pi - 2.0
+        if val0 < 0 :
+            val0 = 0
+            val2pi = 2.0
+        p += val0
+        return self.rad_to_gray(p)
 
     def charge_callback(self, event):
         """
@@ -904,6 +922,8 @@ class SLMViewer:
             return
         for option in options:
             menu['menu'].add_command(label=option, command=_setit(var, option))
+
+        var.set(options[-1])
         return
 
     def add_center(self):
@@ -1281,6 +1301,7 @@ class SLMViewer:
         self.SLM.maps[name]['center'] = [[xc, yc]]
         self.SLM.maps[name]['star info'] = [I1, l1, F1]
         self.SLM.maps[name]['map'] = p
+        self.SLM.maps[name]['type'] = self.map_type_var.get()
         self.maps.append(name)
         self.refresh_optionmenu(self.maps_options, self.maps_var, self.maps)
         print('Finished, mask-name: %s' % name)
@@ -1350,6 +1371,15 @@ class SLMViewer:
         p[p < 0] = 0  # correct possible negative values of fit
         p[p > 255] = 255  # if value gets over 255
         return p.astype(np.uint8)
+
+    def gray_to_rad(self, p):
+        """
+        Takes gray values from 0-255 and returns the corresponding value in radians
+        """
+        if not(0<=p<=255):
+            return
+        return self.menu.phase_curve[int(p)]
+
 
 
 if __name__ == '__main__':

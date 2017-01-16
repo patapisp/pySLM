@@ -8,12 +8,13 @@ from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog
 import matplotlib
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import matplotlib.image as mplimg
 from matplotlib.colors import Normalize
 from matplotlib import cm
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-matplotlib.use('TkAgg')
+
 
 
 class SLM:
@@ -239,7 +240,7 @@ class SLM:
             return val2
         else:  # pixel is in second or fourth quadrant
             return val1
-        
+
     def eight_octants(self, xp, yp, c, val1, val2):
         """
         Method that creates 8octants phase mask
@@ -384,22 +385,3 @@ class SLM:
         k2_real /= norm_real
         val_airy = k1_real*self.four_qs(x, y, c1, val1, val2) + k2_real*self.four_qs(x, y, c2, val1, val2)
         return val_airy
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
