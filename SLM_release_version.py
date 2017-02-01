@@ -174,41 +174,21 @@ class DropMenu:
     def calibration_callback(self):
         toplevel_r = Toplevel()
         toplevel_r.title('Grayvalues calibration')
-        toplevel_r.geometry("300x150+300+300")
+        toplevel_r.geometry("300x300+300+300")
         toplevel = ttk.Frame(toplevel_r)
         toplevel.grid(column=0, row=0, sticky=(N, W, E, S))
 
-        # v0_lab = Label(toplevel, text='0')
-        # v0_edit = Entry(toplevel, textvariable=self.v0, justify='center')
-        # vpi2_lab = Label(toplevel, text='pi/2')
-        # vpi2_edit = Entry(toplevel, textvariable=self.vpi2, justify='center')
-        # vpi_lab = Label(toplevel, text='pi')
-        # vpi_edit = Entry(toplevel, textvariable=self.vpi, justify='center')
-        # v3pi2_lab = Label(toplevel, text='3pi/2')
-        # v3pi2_edit = Entry(toplevel, textvariable=self.v3pi2, justify='center')
-        # real_value_lab = Label(toplevel, text='Real values')
-        # grayval_lab = Label(toplevel, text='Gray values:')
-        # self.data_real = [0, 0.5*np.pi, np.pi, 1.5*np.pi]
-        # self.data_gray = [0, 111, 200, 255]
 
         self.curve_plot, self.ax = plt.subplots(figsize=(3,3))
-        self.ax.plot(np.arange(256), self.phase_curve, 'o')
+        self.line = self.ax.plot(np.arange(256), self.phase_curve, 'o')
         self.ax.set_xlim([-1, 260])
         self.ax.set_xlabel("gray values")
         self.ax.set_ylabel("Phase shift[$\pi$]")
         data_plot = FigureCanvasTkAgg(self.curve_plot, master=toplevel)
         data_plot.show()
         import_curve_button = ttk.Button(toplevel, text='Import curve', command=self.import_curve_callback)
-        # real_value_lab.grid(column=0, row=0)
-        # grayval_lab.grid(column=0, row=1)
-        # v0_lab.grid(column=1, row=0)
-        # v0_edit.grid(column=1, row=1)
-        # vpi2_lab.grid(column=2, row=0)
-        # vpi2_edit.grid(column=2, row=1)
-        # vpi_lab.grid(column=3, row=0)
-        # vpi_edit.grid(column=3, row=1)
-        # v3pi2_lab.grid(column=4, row=0)
-        # v3pi2_edit.grid(column=4, row=1)
+
+
         import_curve_button.grid(column=0, row=2)
         data_plot.get_tk_widget().grid(column=1, row=2, columnspan=4, rowspan=4)
         return
@@ -218,7 +198,8 @@ class DropMenu:
         phase = np.load(file)
         self.menu_data = {'phase curve': phase}
         self.phase_curve = phase
-        self.ax.set_ydata(phase)
+        self.line[0].set_data(np.arange(256), phase)
+        plt.draw()
         pickle.dump(self.menu_data, open("SLM_data.p", 'wb'))
         return
 
